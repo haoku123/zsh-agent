@@ -1,0 +1,29 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# 环境变量（含密钥，切勿提交）
+.env
+.env.*
+!.env.example
+
+# 日志
+*.log
+npm-debug.log*
+
+# 测试覆盖率
+coverage/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
