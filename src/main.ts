@@ -1,10 +1,11 @@
 /**
  * Agent Harness 入口。
  *
- * 三种模式：
+ * 四种模式：
  *   - 单次：npm run dev -- "你的问题"（流式输出）
  *   - 交互：npm run dev（进入 REPL，多轮对话 + 子命令）
  *   - TUI：npm run dev -- --tui（终端图形界面）
+ *   - HTTP 后端：npm run dev -- --serve（服务现有 Agent，端口默认 8787）
  */
 import 'dotenv/config'
 import path from 'node:path'
@@ -14,6 +15,7 @@ import { contextPlugin } from './plugins/context/index.js'
 import { llmPlugin } from './plugins/llm/index.js'
 import { memoryPlugin } from './plugins/memory/index.js'
 import { replPlugin } from './plugins/repl/index.js'
+import { serverPlugin } from './plugins/server/index.js'
 import { sessionPlugin } from './plugins/session/index.js'
 import { subagentPlugin } from './plugins/subagent/index.js'
 import { tuiPlugin } from './plugins/tui/index.js'
@@ -32,6 +34,7 @@ root.plugin(agentLoopPlugin)
 root.plugin(subagentPlugin) // 子 Agent 委派（依赖 agent + tools）
 root.plugin(replPlugin)
 root.plugin(tuiPlugin)
+root.plugin(serverPlugin) // HTTP 后端服务（依赖 agent + sessions + memory）
 
 registerBuiltinTools(root, rootDir)
 
@@ -43,6 +46,9 @@ const args = process.argv.slice(2)
 if (args[0] === '--tui') {
   // TUI 模式：终端图形界面
   await root.tui.start()
+} else if (args[0] === '--serve') {
+  // HTTP 后端模式：服务现有 Agent
+  await root.server.start()
 } else if (args[0]) {
   // 单次模式：也走流式，能实时看到 token 输出
   console.log('> ', args[0], '\n')
