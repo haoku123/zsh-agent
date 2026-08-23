@@ -39,6 +39,12 @@ export interface LLMService {
   readonly model: string
   /** 发消息给模型，返回文本和/或 tool_calls。 */
   chat(request: ChatRequest): Promise<ChatResponse>
+  /**
+   * 流式发消息：模型产出的文本增量会实时回调 onDelta，
+   * 全部结束时返回与 chat() 相同的完整响应。
+   * 用于终端逐字输出。
+   */
+  chatStream(request: ChatRequest, onDelta: (delta: string) => void): Promise<ChatResponse>
 }
 
 /** 插件配置（可选覆盖 .env 里的 PROVIDER）。 */

@@ -17,7 +17,7 @@
  *     throw new Error('超过 maxSteps')
  */
 import type { Context } from '../../core/context.js'
-import type { AgentLoopConfig, AgentLoopService } from './types.js'
+import type { AgentLoopConfig, AgentLoopRunOptions, AgentLoopService } from './types.js'
 import { userMessage, assistantMessage, toolCall, toolResult } from '../session/event.js'
 import type { DerivedMessage } from '../session/types.js'
 
@@ -46,14 +46,20 @@ export function agentLoopPlugin(ctx: Context, config: AgentLoopConfig = {}): voi
   const maxSteps = config.maxSteps ?? 10
 
   const service: AgentLoopService = {
-    async run(input: string): Promise<string> {
+    async run(input: string, options: AgentLoopRunOptions = {}): Promise<string> {
       ctx.sessions.push(userMessage(input))
 
       for (let step = 0; step < maxSteps; step++) {
-        const res = await ctx.llm.chat({
-          messages: deriveAgentMessages(ctx),
-          tools: ctx.tools.list(),
-        })
+        // 有 context 插件（长期记忆 + system prompt）就用它组装，
+        // 没有则退回纯短期投影——两套都支持，向后兼容。
+        const messages = ctx.has('context')
+          ? ctx.context.assemble().messages
+          : deriveAgentMessages(ctx)
+        const tools = ctx.tools.list()
+        // 有 onDelta 就走流式，否则走一次性 chat
+        const res = options.onDelta
+          ? await ctx.llm.chatStream({ messages, tools }, options.onDelta)
+          : await ctx.llm.chat({ messages, tools })
 
         if (res.toolCalls.length === 0) {
           if (!res.content) throw new Error('模型返回空响应')

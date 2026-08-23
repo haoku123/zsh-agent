@@ -34,6 +34,9 @@ export function sessionPlugin(ctx: Context): void {
           return { role: p.role, content: p.content }
         })
     },
+    clear() {
+      log.clear()
+    },
     get length() {
       return log.length
     },

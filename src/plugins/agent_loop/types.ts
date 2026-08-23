@@ -22,7 +22,13 @@ import type { Context } from '../../core/context.js'
  */
 export interface AgentLoopService {
   // TODO: 补全方法签名
-  run(input: string): Promise<string>
+  run(input: string, options?: AgentLoopRunOptions): Promise<string>
+}
+
+/** run 的可选参数。 */
+export interface AgentLoopRunOptions {
+  /** 文本增量实时回调（终端流式输出用）。 */
+  onDelta?: (delta: string) => void
 }
 
 /** 插件配置。 */

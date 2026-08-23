@@ -37,6 +37,12 @@ export class SessionLog {
     return this._events.filter((e) => e.id <= boundaryId).map(clone)
   }
 
+  /** 清空日志（新会话用）。 */
+  clear(): void {
+    this._events = []
+    this._nextId = 0
+  }
+
   get length(): number {
     return this._events.length
   }

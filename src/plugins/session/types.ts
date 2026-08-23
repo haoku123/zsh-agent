@@ -78,6 +78,8 @@ export interface SessionService {
   before(boundaryId: number): SessionEvent[]
   /** 投影成模型历史（只取 user/assistant 消息，按 id 排序）。 */
   deriveMessages(): DerivedMessage[]
+  /** 清空全部事件，开始全新会话。 */
+  clear(): void
   /** 当前日志条数。 */
   readonly length: number
 }
