@@ -50,11 +50,16 @@ export function agentLoopPlugin(ctx: Context, config: AgentLoopConfig = {}): voi
       ctx.sessions.push(userMessage(input))
 
       for (let step = 0; step < maxSteps; step++) {
-        // 有 context 插件（长期记忆 + system prompt）就用它组装，
+        // 有 context 插件（长期记忆 + system prompt + 压缩）就用它组装，
         // 没有则退回纯短期投影——两套都支持，向后兼容。
-        const messages = ctx.has('context')
-          ? ctx.context.assemble().messages
-          : deriveAgentMessages(ctx)
+        let messages: DerivedMessage[]
+        if (ctx.has('context')) {
+          // 先看是否需要压缩早期历史，再组装
+          await ctx.context.compactIfNeeded()
+          messages = ctx.context.assemble().messages
+        } else {
+          messages = deriveAgentMessages(ctx)
+        }
         const tools = ctx.tools.list()
         // 有 onDelta 就走流式，否则走一次性 chat
         const res = options.onDelta

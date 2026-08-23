@@ -10,6 +10,7 @@ import { Context } from '../src/core/context.js'
 import { sessionPlugin } from '../src/plugins/session/index.js'
 import { memoryPlugin } from '../src/plugins/memory/index.js'
 import { contextPlugin } from '../src/plugins/context/index.js'
+import type { LLMService } from '../src/plugins/llm/types.js'
 import type {} from '../src/plugins/session/types.js'
 import type {} from '../src/plugins/context/types.js'
 
@@ -87,6 +88,43 @@ describe('context.assemble 组装', () => {
     const out = ctx.context.assemble()
     expect(out.truncated).toBe(true)
     expect(out.messages.filter((m) => m.role === 'user')).toHaveLength(0)
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('compactIfNeeded 把早期历史压缩成摘要，session 保持完整', async () => {
+    const { ctx, dir } = setup({ maxChars: 300, compactThreshold: 0.01 })
+    // mock LLM：压缩调用返回固定摘要
+    ctx.provide('llm', {
+      provider: 'mock',
+      model: 'mock',
+      chat: async () => ({ content: '项目用 TypeScript + Node.js', toolCalls: [] }),
+      chatStream: async () => ({ content: '', toolCalls: [] }),
+    } satisfies LLMService)
+
+    for (let i = 1; i <= 4; i++) {
+      ctx.sessions.push({ type: 'user/message', role: 'user', content: `问题${i}` })
+      ctx.sessions.push({
+        type: 'assistant/message',
+        role: 'assistant',
+        content: `回答${i}：TypeScript 技术栈`,
+      })
+    }
+    const totalBefore = ctx.sessions.length
+
+    await ctx.context.compactIfNeeded()
+    const out = ctx.context.assemble()
+
+    // session 不变（append-only 真相源）
+    expect(ctx.sessions.length).toBe(totalBefore)
+    // 摘要注入为 system 消息
+    const hasSummary = out.messages.some(
+      (m) => m.role === 'system' && m.content.includes('【历史摘要】'),
+    )
+    expect(hasSummary).toBe(true)
+    // 早期消息被压缩掉，只保留最近
+    const texts = out.messages.map((m) => m.content)
+    expect(texts.some((t) => t.includes('问题1'))).toBe(false)
+    expect(texts.some((t) => t.includes('问题4'))).toBe(true)
     rmSync(dir, { recursive: true, force: true })
   })
 })

@@ -3,6 +3,9 @@
  * 覆盖：append-only 日志、深拷贝防篡改、before 边界、投影、clear。
  */
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { SessionLog } from '../src/plugins/session/log.js'
 import { sessionPlugin } from '../src/plugins/session/index.js'
 import { userMessage, assistantMessage, toolResult } from '../src/plugins/session/event.js'
@@ -43,6 +46,28 @@ describe('SessionLog 存储核心', () => {
     expect(log.length).toBe(0)
     const e = log.push({ type: 'user/message', role: 'user', content: 'b' })
     expect(e.id).toBe(0)
+  })
+
+  it('JSONL 持久化：新实例能恢复历史且 id 连续', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'harness-session-'))
+    const file = path.join(dir, 'session.jsonl')
+
+    // 写入
+    const log1 = new SessionLog()
+    log1.enablePersistence(file)
+    log1.push({ type: 'user/message', role: 'user', content: '你好' })
+    log1.push({ type: 'assistant/message', role: 'assistant', content: '收到' })
+
+    // 模拟重启：新实例读同一文件
+    const log2 = new SessionLog()
+    log2.enablePersistence(file)
+    expect(log2.length).toBe(2)
+    expect(log2.all()[0]!.payload).toEqual({ type: 'user/message', role: 'user', content: '你好' })
+    // id 从恢复的最后一条继续
+    const e = log2.push({ type: 'user/message', role: 'user', content: '再来' })
+    expect(e.id).toBe(2)
+
+    rmSync(dir, { recursive: true, force: true })
   })
 })
 

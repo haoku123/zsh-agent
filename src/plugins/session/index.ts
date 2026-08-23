@@ -1,15 +1,20 @@
 /**
  * Session 插件入口。
  *
- * 组装 log（存储）+ 投影（deriveMessages），provide 成 ctx.sessions，
+ * 组装 log（存储 + JSONL 持久化）+ 投影（deriveMessages），provide 成 ctx.sessions，
  * 并在 push 时广播 'session/event'。
+ *
+ * 可选配置 { file }：启用 JSONL 落盘（重启后恢复历史）。
  */
 import type { Context } from '../../core/context.js'
 import { SessionLog } from './log.js'
 import type { DerivedMessage, SessionEvent, SessionEventType, SessionService } from './types.js'
 
-export function sessionPlugin(ctx: Context): void {
+export function sessionPlugin(ctx: Context, config: { file?: string } = {}): void {
   const log = new SessionLog()
+  if (config.file) {
+    log.enablePersistence(config.file)
+  }
 
   const service: SessionService = {
     push<T extends { type: SessionEventType }>(e: T): SessionEvent {
@@ -43,4 +48,9 @@ export function sessionPlugin(ctx: Context): void {
   }
 
   ctx.provide('sessions', service)
+
+  // 恢复历史后广播一次（让 REPL/TUI/SSE 订阅者知道已有会话内容）
+  for (const e of log.all()) {
+    ctx.emit('session/event', e)
+  }
 }

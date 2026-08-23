@@ -33,6 +33,12 @@ export interface AssembledMessages {
 export interface ContextService {
   /** 组装当前请求的完整上下文。 */
   assemble(): AssembledMessages
+  /**
+   * 上下文压缩（Pi 风格）：当上下文接近窗口上限时，
+   * 把早期历史交给 LLM 生成摘要（不硬砍），保留最近消息。
+   * 由 agent_loop 每轮循环前调用。无 LLM 依赖时静默跳过。
+   */
+  compactIfNeeded(): Promise<void>
 }
 
 /** 插件配置。 */
@@ -43,6 +49,8 @@ export interface ContextConfig {
   maxMemoryItems?: number
   /** 上下文窗口上限（字符数）。超出后从 history 头部截断。 */
   maxChars?: number
+  /** 触发压缩的窗口占比阈值（0~1），默认 0.7。达到 70% 即开始压缩早期历史。 */
+  compactThreshold?: number
 }
 
 // ==================== 扩展 ctx ====================

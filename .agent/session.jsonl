@@ -1,0 +1,4 @@
+{"id":0,"timestamp":1787498366697,"type":"user/message","payload":{"type":"user/message","role":"user","content":"你好，我是张承琦"}}
+{"id":1,"timestamp":1787498369107,"type":"assistant/message","payload":{"type":"assistant/message","role":"assistant","content":"\n你好！很高兴认识你，张承琦。我已经记住了你喝茶的喜好，特别是铁观音和龙井。\n\n有什么我可以帮你的吗？"}}
+{"id":2,"timestamp":1787498375652,"type":"user/message","payload":{"type":"user/message","role":"user","content":"我是谁？"}}
+{"id":3,"timestamp":1787498378798,"type":"assistant/message","payload":{"type":"assistant/message","role":"assistant","content":"你叫张承琦。"}}

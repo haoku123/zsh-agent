@@ -25,7 +25,8 @@ import { toolsPlugin } from './plugins/tools/index.js'
 const rootDir = process.cwd()
 
 const root = new Context()
-root.plugin(sessionPlugin)
+// 会话落盘：JSONL 持久化到 .agent/session.json（重启后恢复对话）
+root.plugin(sessionPlugin, { file: path.join(rootDir, '.agent', 'session.jsonl') })
 root.plugin(llmPlugin)
 root.plugin(memoryPlugin) // 长期记忆（注意：必须在 context 之前挂载）
 root.plugin(contextPlugin) // 上下文组装器，依赖 memory + sessions
